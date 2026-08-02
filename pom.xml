@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Build for the macro endpoint facility.
+
+  Two things here are worth reading rather than skimming:
+
+  1. The site is generated from a *derived* source directory, ${project.build.directory}/site-src,
+     not from src/site. The hand-written pages are copied in and the machine-written ones (the macro
+     catalogue and its diagrams, produced by folding every registered macro through the static
+     interpreters) are generated alongside them, so published documentation of a composite endpoint
+     cannot drift from the composition itself.
+
+  2. Package and class dependency diagrams come from UMLDoclet, which runs inside the Javadoc
+     report. Two further diagram sources are available behind profiles: `graphviz` renders the
+     generated .dot files and adds a module dependency graph, and `jdepend` adds a numeric package
+     dependency report.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.macroapi</groupId>
+  <artifactId>macro-endpoints</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Macro Endpoints</name>
+  <description>
+    A macro facility for API endpoints: low-level calls are modelled as Kleisli arrows, compositions
+    are reified as a plan AST, and a single catamorphism over that AST yields execution,
+    documentation, cost estimation and dependency diagrams. Catamorphisms are also applied to the
+    intermediate results a composition produces, so paged and hierarchical responses are reduced by
+    an algebra that is fused into the fetch rather than materialised first.
+  </description>
+  <url>https://example.org/macro-endpoints</url>
+  <inceptionYear>2026</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>macroapi</id>
+      <name>Macro Endpoints Authors</name>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://example.org/macro-endpoints.git</connection>
+    <developerConnection>scm:git:ssh://git@example.org/macro-endpoints.git</developerConnection>
+    <url>https://example.org/macro-endpoints</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://example.org/macro-endpoints/issues</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <!-- Staging only; `mvn site:stage` and `mvn site:run` need no remote server. -->
+    <site>
+      <id>macro-endpoints-site</id>
+      <name>Macro Endpoints Site</name>
+      <url>file://${project.basedir}/target/staging</url>
+    </site>
+  </distributionManagement>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- The directory the site plugin actually reads: hand-written pages plus generated ones. -->
+    <site.source.directory>${project.build.directory}/site-src</site.source.directory>
+
+    <junit.version>5.11.4</junit.version>
+    <umldoclet.version>2.2.1</umldoclet.version>
+
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+    <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+    <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
+    <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+    <maven-jxr-plugin.version>3.6.0</maven-jxr-plugin.version>
+    <maven-project-info-reports-plugin.version>3.8.0</maven-project-info-reports-plugin.version>
+    <maven-surefire-report-plugin.version>3.5.2</maven-surefire-report-plugin.version>
+    <taglist-maven-plugin.version>3.2.1</taglist-maven-plugin.version>
+    <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+    <doxia-module-markdown.version>1.12.0</doxia-module-markdown.version>
+    <maven-fluido-skin.version>1.12.0</maven-fluido-skin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>${maven-site-plugin.version}</version>
+          <configuration>
+            <!-- Read the derived directory, not src/site. -->
+            <siteDirectory>${site.source.directory}</siteDirectory>
+          </configuration>
+          <dependencies>
+            <!-- Doxia parses APT and XDoc out of the box; Markdown needs this module. -->
+            <dependency>
+              <groupId>org.apache.maven.doxia</groupId>
+              <artifactId>doxia-module-markdown</artifactId>
+              <version>${doxia-module-markdown.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+          </compilerArgs>
+          <!--
+            The higher-kinded encoding in io.macroapi.hkt needs a handful of casts that the compiler
+            cannot check. They are confined to `narrow` methods and each is annotated and justified,
+            so warnings are shown but the build is not failed on them.
+          -->
+          <showWarnings>true</showWarnings>
+          <failOnWarning>false</failOnWarning>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <!-- The simulated API sleeps, so give the concurrency assertions room on a loaded box. -->
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+        </configuration>
+      </plugin>
+
+      <!--
+        Site preparation, in two steps bound to pre-site.
+
+        Step one copies the hand-written pages into the derived site directory. Step two runs the
+        generator, which writes target/site-src/markdown/macros.md plus one .dot and one .puml per
+        macro into target/site-src/resources/diagrams. Because generation only expands macros and
+        folds the results, it performs no API call and needs no server.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>${maven-resources-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy-handwritten-site-sources</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${site.source.directory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/src/site</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>generate-macro-documentation</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>io.macroapi.docs.SiteDocsGenerator</mainClass>
+              <classpathScope>runtime</classpathScope>
+              <arguments>
+                <argument>${site.source.directory}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>${maven-project-info-reports-plugin.version}</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>index</report>
+              <report>summary</report>
+              <report>dependencies</report>
+              <report>dependency-info</report>
+              <report>plugins</report>
+              <report>licenses</report>
+              <report>scm</report>
+              <report>team</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+
+      <!--
+        Javadoc, run through UMLDoclet.
+
+        This is where the required package and class dependency diagrams come from. UMLDoclet is a
+        drop-in doclet: it emits the normal Javadoc and additionally renders, for every class, a
+        class diagram showing fields, methods, inheritance and associations, and for every package a
+        package diagram; a dependency diagram of the packages themselves is written to the overview
+        page. Diagrams are embedded as SVG, so no Graphviz or other native tool is needed.
+
+        Because the diagrams are derived from the source model, the sealed hierarchies show up as
+        they are: Plan with its ten permitted node records, ApiError with its seven, and the
+        PlanAlgebra implementations fanning out from the single interface.
+
+        Two notes. UMLDoclet's option names have changed across major versions; the ones below are
+        for 2.x, and if the version property is raised the additionalOptions block should be checked
+        against that release's documentation. And -Xdoclint is not passed, because doclint belongs to
+        the standard doclet and a custom doclet rejects it — the sources are nonetheless clean under
+        `javadoc -Xdoclint:all`, which is worth running directly when the documentation is edited.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc-plugin.version}</version>
+        <configuration>
+          <doclet>nl.talsmasoftware.umldoclet.UMLDoclet</doclet>
+          <docletArtifact>
+            <groupId>nl.talsmasoftware</groupId>
+            <artifactId>umldoclet</artifactId>
+            <version>${umldoclet.version}</version>
+          </docletArtifact>
+          <useStandardDocletOptions>true</useStandardDocletOptions>
+          <!-- Sealed hierarchies are the point of several of these classes; show the links.
+               UMLDoclet has no UML-specific visibility flag: it honors the standard javadoc
+               access level, so private classes are included via `show`, not `additionalOptions`. -->
+          <show>private</show>
+          <additionalOptions>
+            <!-- Keep the PlantUML alongside the rendered SVG, so diagrams can be regenerated. -->
+            <additionalOption>-createPumlFiles</additionalOption>
+            <additionalOption>-umlImageFormat svg</additionalOption>
+          </additionalOptions>
+          <detectJavaApiLink>false</detectJavaApiLink>
+          <notimestamp>true</notimestamp>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+
+      <!-- Cross-referenced sources, so the diagrams can be clicked through to the code. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>${maven-jxr-plugin.version}</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>${maven-surefire-report-plugin.version}</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>taglist-maven-plugin</artifactId>
+        <version>${taglist-maven-plugin.version}</version>
+        <configuration>
+          <tagListOptions>
+            <tagClasses>
+              <tagClass>
+                <displayName>Outstanding work</displayName>
+                <tags>
+                  <tag><matchString>TODO</matchString><matchType>exact</matchType></tag>
+                  <tag><matchString>FIXME</matchString><matchType>exact</matchType></tag>
+                </tags>
+              </tagClass>
+            </tagClasses>
+          </tagListOptions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <profiles>
+    <!--
+      Optional extra diagrams that depend on a native Graphviz installation.
+
+      `mvn -Pgraphviz site` renders the generated call-dependency .dot files to SVG and adds a
+      module dependency graph of the Maven artifacts themselves. Kept out of the default build so
+      that a machine without `dot` on its PATH can still produce the full site: UMLDoclet already
+      supplies the package and class diagrams without any native dependency.
+    -->
+    <profile>
+      <id>graphviz</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.ferstl</groupId>
+            <artifactId>depgraph-maven-plugin</artifactId>
+            <version>4.0.3</version>
+            <executions>
+              <execution>
+                <id>module-dependency-graph</id>
+                <phase>pre-site</phase>
+                <goals>
+                  <goal>graph</goal>
+                </goals>
+                <configuration>
+                  <graphFormat>svg</graphFormat>
+                  <createImage>true</createImage>
+                  <outputDirectory>${site.source.directory}/resources/diagrams</outputDirectory>
+                  <outputFileName>module-dependencies</outputFileName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>${exec-maven-plugin.version}</version>
+            <executions>
+              <!-- Render every call graph the documentation generator emitted. -->
+              <execution>
+                <id>render-call-graphs</id>
+                <phase>pre-site</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>dot</executable>
+                  <arguments>
+                    <argument>-Tsvg</argument>
+                    <argument>-O</argument>
+                  </arguments>
+                  <workingDirectory>${site.source.directory}/resources/diagrams</workingDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+      A numeric package dependency report: afferent and efferent coupling, abstractness, instability,
+      distance from the main sequence, and any cycles.
+
+      Profile-gated because JDepend reads bytecode with an old ASM and has historically choked on
+      recent class file versions. Where it does run, it is a useful cross-check on the UML package
+      diagram — the interpret package should depend on plan and not the reverse.
+    -->
+    <profile>
+      <id>jdepend</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>jdepend-maven-plugin</artifactId>
+            <version>2.0</version>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+  </profiles>
+</project>

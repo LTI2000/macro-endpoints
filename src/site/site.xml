@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Site menu.
+
+  The "Macros" page is generated at pre-site by io.macroapi.docs.SiteDocsGenerator and will not
+  exist in src/site; it appears in target/site-src/markdown alongside the pages that do.
+-->
+<project xmlns="http://maven.apache.org/DECORATION/1.8.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 http://maven.apache.org/xsd/decoration-1.8.0.xsd"
+      name="Macro Endpoints">
+
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>1.12.0</version>
+  </skin>
+
+  <custom>
+    <fluidoSkin>
+      <topBarEnabled>false</topBarEnabled>
+      <sideBarEnabled>true</sideBarEnabled>
+      <sourceLineNumbersEnabled>true</sourceLineNumbersEnabled>
+    </fluidoSkin>
+  </custom>
+
+  <body>
+    <menu name="Overview">
+      <item name="Introduction" href="index.html"/>
+      <item name="Architecture" href="architecture.html"/>
+      <item name="Macro catalogue" href="macros.html"/>
+    </menu>
+
+    <menu name="Design notes">
+      <item name="Two levels of catamorphism" href="architecture.html#two-levels-of-catamorphism"/>
+      <item name="Why the plan is reified" href="architecture.html#why-reify-the-composition"/>
+      <item name="Record patterns and capture" href="architecture.html#record-patterns-and-capture-conversion"/>
+    </menu>
+
+    <menu name="Diagrams">
+      <item name="Package and class UML" href="apidocs/index.html"/>
+      <item name="Call dependency graphs" href="macros.html#call-dependency-diagrams"/>
+    </menu>
+
+    <menu ref="reports"/>
+  </body>
+</project>
