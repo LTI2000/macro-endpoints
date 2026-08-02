@@ -1,6 +1,6 @@
 package io.macroapi.plan;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 
 /**
  * An <em>effectful coalgebra</em>: the rule that grows one layer of a recursive structure by
@@ -35,5 +35,5 @@ public interface PlanCoalgebra<G, S> {
      * @param seed the current seed
      * @return a plan producing one layer whose recursive positions hold the next seeds
      */
-    Plan<App<G, S>> step(S seed);
+    Plan<Higher<G, S>> step(S seed);
 }

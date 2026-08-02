@@ -1,6 +1,6 @@
 package io.macroapi.effect;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 import io.macroapi.hkt.Applicative;
 
 import java.time.Duration;
@@ -41,11 +41,11 @@ import java.util.function.Supplier;
  *
  * @param <A> the type produced on success
  */
-public final class Eff<A> implements App<Eff.Witness, A> {
+public final class Eff<A> implements Higher<Eff.Witness, A> {
 
     /**
      * Uninhabited type-level tag standing for the {@code Eff} type constructor in
-     * {@link App}-encoded signatures.
+     * {@link Higher}-encoded signatures.
      */
     public static final class Witness {
         private Witness() {
@@ -274,34 +274,34 @@ public final class Eff<A> implements App<Eff.Witness, A> {
     }
 
     /**
-     * Recovers the concrete type from its {@link App} encoding.
+     * Recovers the concrete type from its {@link Higher} encoding.
      *
      * <p>The cast cannot fail: {@link Witness} is uninstantiable, so {@code Eff} is the only
-     * implementation of {@code App<Eff.Witness, A>} that can exist.</p>
+     * implementation of {@code Higher<Eff.Witness, A>} that can exist.</p>
      *
-     * @param app the encoded effect
+     * @param higher the encoded effect
      * @param <A> the success type
      * @return the same value, statically typed as {@code Eff}
      */
     @SuppressWarnings("unchecked")
-    public static <A> Eff<A> narrow(App<Witness, A> app) {
-        return (Eff<A>) app;
+    public static <A> Eff<A> narrow(Higher<Witness, A> higher) {
+        return (Eff<A>) higher;
     }
 
     private static final Applicative<Witness> APPLICATIVE = new Applicative<>() {
         @Override
-        public <A> App<Witness, A> pure(A value) {
+        public <A> Higher<Witness, A> pure(A value) {
             return succeed(value);
         }
 
         @Override
-        public <A, B> App<Witness, B> map(App<Witness, A> fa, Function<? super A, ? extends B> fn) {
+        public <A, B> Higher<Witness, B> map(Higher<Witness, A> fa, Function<? super A, ? extends B> fn) {
             return narrow(fa).map(fn);
         }
 
         @Override
-        public <A, B, C> App<Witness, C> map2(App<Witness, A> fa, App<Witness, B> fb,
-                                              BiFunction<? super A, ? super B, ? extends C> fn) {
+        public <A, B, C> Higher<Witness, C> map2(Higher<Witness, A> fa, Higher<Witness, B> fb,
+                                                 BiFunction<? super A, ? super B, ? extends C> fn) {
             return narrow(fa).zipPar(narrow(fb), fn);
         }
     };

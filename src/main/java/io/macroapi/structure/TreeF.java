@@ -1,6 +1,6 @@
 package io.macroapi.structure;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 import io.macroapi.hkt.Applicative;
 import io.macroapi.hkt.Traverse;
 
@@ -21,7 +21,7 @@ import java.util.function.Function;
  * @param <E> the label type carried by each node
  * @param <A> the recursive position
  */
-public sealed interface TreeF<E, A> extends App<TreeF.Witness<E>, A> {
+public sealed interface TreeF<E, A> extends Higher<TreeF.Witness<E>, A> {
 
     /**
      * Uninhabited type-level tag standing for the partially applied constructor {@code TreeF<E, _>}.
@@ -58,17 +58,17 @@ public sealed interface TreeF<E, A> extends App<TreeF.Witness<E>, A> {
     }
 
     /**
-     * Recovers the concrete type from its {@link App} encoding; see {@link App} for why this cast is
+     * Recovers the concrete type from its {@link Higher} encoding; see {@link Higher} for why this cast is
      * safe.
      *
-     * @param app the encoded layer
+     * @param higher the encoded layer
      * @param <E> the label type
      * @param <A> the recursive position
      * @return the same value, statically typed
      */
     @SuppressWarnings("unchecked")
-    static <E, A> TreeF<E, A> narrow(App<Witness<E>, A> app) {
-        return (TreeF<E, A>) app;
+    static <E, A> TreeF<E, A> narrow(Higher<Witness<E>, A> higher) {
+        return (TreeF<E, A>) higher;
     }
 
     /**
@@ -83,7 +83,7 @@ public sealed interface TreeF<E, A> extends App<TreeF.Witness<E>, A> {
     static <E> Traverse<Witness<E>> traversal() {
         return new Traverse<Witness<E>>() {
             @Override
-            public <A, B> App<Witness<E>, B> map(App<Witness<E>, A> fa, Function<? super A, ? extends B> fn) {
+            public <A, B> Higher<Witness<E>, B> map(Higher<Witness<E>, A> fa, Function<? super A, ? extends B> fn) {
                 return switch (narrow(fa)) {
                     case Node<E, A>(var label, var children) ->
                             new Node<>(label, children.stream().<B>map(fn::apply).toList());
@@ -91,13 +91,13 @@ public sealed interface TreeF<E, A> extends App<TreeF.Witness<E>, A> {
             }
 
             @Override
-            public <G, A, B> App<G, App<Witness<E>, B>> traverse(Applicative<G> applicative,
-                                                                 App<Witness<E>, A> fa,
-                                                                 Function<? super A, ? extends App<G, B>> fn) {
+            public <G, A, B> Higher<G, Higher<Witness<E>, B>> traverse(Applicative<G> applicative,
+                                                                       Higher<Witness<E>, A> fa,
+                                                                       Function<? super A, ? extends Higher<G, B>> fn) {
                 return switch (narrow(fa)) {
                     case Node<E, A>(var label, var children) -> {
-                        List<App<G, B>> visited = children.stream().<App<G, B>>map(fn::apply).toList();
-                        yield applicative.<List<B>, App<Witness<E>, B>>map(
+                        List<Higher<G, B>> visited = children.stream().<Higher<G, B>>map(fn::apply).toList();
+                        yield applicative.<List<B>, Higher<Witness<E>, B>>map(
                                 applicative.sequence(visited),
                                 reduced -> new Node<>(label, reduced));
                     }

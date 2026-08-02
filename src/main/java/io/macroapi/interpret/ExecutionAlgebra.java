@@ -3,12 +3,8 @@ package io.macroapi.interpret;
 import io.macroapi.effect.ApiError;
 import io.macroapi.effect.Eff;
 import io.macroapi.effect.Endpoint;
-import io.macroapi.hkt.Algebra;
-import io.macroapi.hkt.App;
-import io.macroapi.hkt.Fix;
-import io.macroapi.hkt.Functor;
-import io.macroapi.hkt.Recursion;
-import io.macroapi.hkt.Traverse;
+import io.macroapi.hkt.*;
+import io.macroapi.hkt.Higher;
 import io.macroapi.plan.Plan;
 import io.macroapi.plan.PlanAlgebra;
 import io.macroapi.plan.PlanCata;
@@ -43,17 +39,17 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
     }
 
     @Override
-    public <A> App<Eff.Witness, A> pure(A value) {
+    public <A> Higher<Eff.Witness, A> pure(A value) {
         return Eff.succeed(value);
     }
 
     @Override
-    public <A> App<Eff.Witness, A> failed(ApiError error) {
+    public <A> Higher<Eff.Witness, A> failed(ApiError error) {
         return Eff.fail(error);
     }
 
     @Override
-    public <Q, R> App<Eff.Witness, R> invoke(Endpoint<Q, R> endpoint, Q request) {
+    public <Q, R> Higher<Eff.Witness, R> invoke(Endpoint<Q, R> endpoint, Q request) {
         String name = endpoint.spec().name();
         Eff<R> call = Eff.defer(() -> endpoint.run(request))
                 .observed((elapsed, outcome) ->
@@ -62,9 +58,9 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
     }
 
     @Override
-    public <X, A> App<Eff.Witness, A> transform(App<Eff.Witness, X> source,
-                                                Function<? super X, ? extends A> function,
-                                                String label) {
+    public <X, A> Higher<Eff.Witness, A> transform(Higher<Eff.Witness, X> source,
+                                                   Function<? super X, ? extends A> function,
+                                                   String label) {
         return Eff.narrow(source).map(function);
     }
 
@@ -76,10 +72,10 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
      * everything as a chain.</p>
      */
     @Override
-    public <X, Y, A> App<Eff.Witness, A> combine(App<Eff.Witness, X> left,
-                                                 App<Eff.Witness, Y> right,
-                                                 BiFunction<? super X, ? super Y, ? extends A> combiner,
-                                                 String label) {
+    public <X, Y, A> Higher<Eff.Witness, A> combine(Higher<Eff.Witness, X> left,
+                                                    Higher<Eff.Witness, Y> right,
+                                                    BiFunction<? super X, ? super Y, ? extends A> combiner,
+                                                    String label) {
         return Eff.narrow(left).zipPar(Eff.narrow(right), combiner);
     }
 
@@ -91,21 +87,21 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
      * probe is ignored here — it exists solely for analysis and must never influence execution.</p>
      */
     @Override
-    public <X, A> App<Eff.Witness, A> chain(App<Eff.Witness, X> source,
-                                            Function<? super X, Plan<A>> continuation,
-                                            Optional<X> staticProbe,
-                                            String label) {
+    public <X, A> Higher<Eff.Witness, A> chain(Higher<Eff.Witness, X> source,
+                                               Function<? super X, Plan<A>> continuation,
+                                               Optional<X> staticProbe,
+                                               String label) {
         return Eff.narrow(source).flatMap(value -> Eff.narrow(PlanCata.fold(continuation.apply(value), this)));
     }
 
     @Override
-    public <A> App<Eff.Witness, A> recover(App<Eff.Witness, A> source,
-                                           Function<? super ApiError, Plan<A>> handler) {
+    public <A> Higher<Eff.Witness, A> recover(Higher<Eff.Witness, A> source,
+                                              Function<? super ApiError, Plan<A>> handler) {
         return Eff.narrow(source).recoverWith(error -> Eff.narrow(PlanCata.fold(handler.apply(error), this)));
     }
 
     @Override
-    public <A> App<Eff.Witness, A> labeled(String name, App<Eff.Witness, A> inner) {
+    public <A> Higher<Eff.Witness, A> labeled(String name, Higher<Eff.Witness, A> inner) {
         return Eff.narrow(inner).observed((elapsed, outcome) ->
                 runtime.trace(new TraceEvent(TraceEvent.Kind.BOUNDARY, name, elapsed, outcome)));
     }
@@ -117,10 +113,10 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
      * computation applied to the result.</p>
      */
     @Override
-    public <G, A> App<Eff.Witness, A> fold(App<Eff.Witness, Fix<G>> source,
-                                           Functor<G> functor,
-                                           Algebra<G, A> algebra,
-                                           String label) {
+    public <G, A> Higher<Eff.Witness, A> fold(Higher<Eff.Witness, Fix<G>> source,
+                                              Functor<G> functor,
+                                              Algebra<G, A> algebra,
+                                              String label) {
         return Eff.narrow(source).map(structure -> Recursion.cata(functor, algebra, structure));
     }
 
@@ -138,11 +134,11 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
      * instance — sequential for a page chain, concurrent for a tree level.</p>
      */
     @Override
-    public <G, S, A> App<Eff.Witness, A> hylo(S seed,
-                                              Traverse<G> traversal,
-                                              PlanCoalgebra<G, S> coalgebra,
-                                              Algebra<G, A> algebra,
-                                              String label) {
+    public <G, S, A> Higher<Eff.Witness, A> hylo(S seed,
+                                                 Traverse<G> traversal,
+                                                 PlanCoalgebra<G, S> coalgebra,
+                                                 Algebra<G, A> algebra,
+                                                 String label) {
         return expand(seed, traversal, coalgebra, algebra);
     }
 
@@ -150,9 +146,9 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
                                     Traverse<G> traversal,
                                     PlanCoalgebra<G, S> coalgebra,
                                     Algebra<G, A> algebra) {
-        Eff<App<G, S>> layer = Eff.defer(() -> Eff.narrow(PlanCata.fold(coalgebra.step(seed), this)));
+        Eff<Higher<G, S>> layer = Eff.defer(() -> Eff.narrow(PlanCata.fold(coalgebra.step(seed), this)));
         return layer.flatMap(grown -> {
-            App<Eff.Witness, App<G, A>> reducedChildren = traversal.traverse(
+            Higher<Eff.Witness, Higher<G, A>> reducedChildren = traversal.traverse(
                     Eff.applicative(),
                     grown,
                     childSeed -> expand(childSeed, traversal, coalgebra, algebra));

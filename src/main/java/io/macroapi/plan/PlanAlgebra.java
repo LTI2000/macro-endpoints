@@ -2,11 +2,8 @@ package io.macroapi.plan;
 
 import io.macroapi.effect.ApiError;
 import io.macroapi.effect.Endpoint;
-import io.macroapi.hkt.Algebra;
-import io.macroapi.hkt.App;
-import io.macroapi.hkt.Fix;
-import io.macroapi.hkt.Functor;
-import io.macroapi.hkt.Traverse;
+import io.macroapi.hkt.*;
+import io.macroapi.hkt.Higher;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -20,7 +17,7 @@ import java.util.function.Function;
  * the recursion lives in {@link PlanCata#fold}, not here. Because the result type varies with the
  * node's own type parameter, the carrier cannot be a plain type: an interpreter targeting execution
  * produces {@code Eff<A>} for a {@code Plan<A>}, while one targeting documentation produces the
- * same {@code Outline} whatever {@code A} is. Both are expressed as {@code App<F, A>}, using the
+ * same {@code Outline} whatever {@code A} is. Both are expressed as {@code Higher<F, A>}, using the
  * effect witness in the first case and a constant functor in the second.</p>
  *
  * <h2>Implementing an interpreter</h2>
@@ -48,7 +45,7 @@ public interface PlanAlgebra<F> {
      * @param <A>   the value type
      * @return the interpretation
      */
-    <A> App<F, A> pure(A value);
+    <A> Higher<F, A> pure(A value);
 
     /**
      * Interprets a constant failure.
@@ -57,7 +54,7 @@ public interface PlanAlgebra<F> {
      * @param <A>   the type that would have been produced
      * @return the interpretation
      */
-    <A> App<F, A> failed(ApiError error);
+    <A> Higher<F, A> failed(ApiError error);
 
     /**
      * Interprets a single endpoint call.
@@ -68,7 +65,7 @@ public interface PlanAlgebra<F> {
      * @param <R>      the response type
      * @return the interpretation
      */
-    <Q, R> App<F, R> invoke(Endpoint<Q, R> endpoint, Q request);
+    <Q, R> Higher<F, R> invoke(Endpoint<Q, R> endpoint, Q request);
 
     /**
      * Interprets a pure transformation of an already-interpreted source.
@@ -80,7 +77,7 @@ public interface PlanAlgebra<F> {
      * @param <A>      the output type
      * @return the interpretation
      */
-    <X, A> App<F, A> transform(App<F, X> source, Function<? super X, ? extends A> function, String label);
+    <X, A> Higher<F, A> transform(Higher<F, X> source, Function<? super X, ? extends A> function, String label);
 
     /**
      * Interprets the merge of two independent, already-interpreted branches.
@@ -94,10 +91,10 @@ public interface PlanAlgebra<F> {
      * @param <A>      the merged result type
      * @return the interpretation
      */
-    <X, Y, A> App<F, A> combine(App<F, X> left,
-                                App<F, Y> right,
-                                BiFunction<? super X, ? super Y, ? extends A> combiner,
-                                String label);
+    <X, Y, A> Higher<F, A> combine(Higher<F, X> left,
+                                   Higher<F, Y> right,
+                                   BiFunction<? super X, ? super Y, ? extends A> combiner,
+                                   String label);
 
     /**
      * Interprets a dependent step.
@@ -110,10 +107,10 @@ public interface PlanAlgebra<F> {
      * @param <A>          the final result type
      * @return the interpretation
      */
-    <X, A> App<F, A> chain(App<F, X> source,
-                           Function<? super X, Plan<A>> continuation,
-                           Optional<X> staticProbe,
-                           String label);
+    <X, A> Higher<F, A> chain(Higher<F, X> source,
+                              Function<? super X, Plan<A>> continuation,
+                              Optional<X> staticProbe,
+                              String label);
 
     /**
      * Interprets a recovery boundary.
@@ -123,7 +120,7 @@ public interface PlanAlgebra<F> {
      * @param <A>     the result type
      * @return the interpretation
      */
-    <A> App<F, A> recover(App<F, A> source, Function<? super ApiError, Plan<A>> handler);
+    <A> Higher<F, A> recover(Higher<F, A> source, Function<? super ApiError, Plan<A>> handler);
 
     /**
      * Interprets a named boundary around an already-interpreted plan.
@@ -133,7 +130,7 @@ public interface PlanAlgebra<F> {
      * @param <A>   the result type
      * @return the interpretation
      */
-    <A> App<F, A> labeled(String name, App<F, A> inner);
+    <A> Higher<F, A> labeled(String name, Higher<F, A> inner);
 
     /**
      * Interprets a catamorphism over a recursive intermediate result.
@@ -146,7 +143,7 @@ public interface PlanAlgebra<F> {
      * @param <A>     the folded result type
      * @return the interpretation
      */
-    <G, A> App<F, A> fold(App<F, Fix<G>> source, Functor<G> functor, Algebra<G, A> algebra, String label);
+    <G, A> Higher<F, A> fold(Higher<F, Fix<G>> source, Functor<G> functor, Algebra<G, A> algebra, String label);
 
     /**
      * Interprets an effectful unfold fused with a catamorphism.
@@ -161,9 +158,9 @@ public interface PlanAlgebra<F> {
      * @param <A>       the reduced result type
      * @return the interpretation
      */
-    <G, S, A> App<F, A> hylo(S seed,
-                             Traverse<G> traversal,
-                             PlanCoalgebra<G, S> coalgebra,
-                             Algebra<G, A> algebra,
-                             String label);
+    <G, S, A> Higher<F, A> hylo(S seed,
+                                Traverse<G> traversal,
+                                PlanCoalgebra<G, S> coalgebra,
+                                Algebra<G, A> algebra,
+                                String label);
 }

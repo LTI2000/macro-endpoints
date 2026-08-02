@@ -7,7 +7,7 @@ import java.util.function.Function;
  * running an effect, collecting the results back into the same shape.
  *
  * <p>Traversal is what makes an <em>effectful</em> unfold possible. When the interpreter expands a
- * recursive API call it produces one layer {@code App<F, S>} of seeds, and must then expand each
+ * recursive API call it produces one layer {@code Higher<F, S>} of seeds, and must then expand each
  * seed with a further round of API calls. Turning {@code F} of effects into an effect of {@code F}
  * is precisely {@link #traverse}.</p>
  *
@@ -30,7 +30,7 @@ public interface Traverse<F> extends Functor<F> {
      * @param <B>         the target element type
      * @return the effect producing the rebuilt shape
      */
-    <G, A, B> App<G, App<F, B>> traverse(Applicative<G> applicative,
-                                         App<F, A> fa,
-                                         Function<? super A, ? extends App<G, B>> fn);
+    <G, A, B> Higher<G, Higher<F, B>> traverse(Applicative<G> applicative,
+                                               Higher<F, A> fa,
+                                               Function<? super A, ? extends Higher<G, B>> fn);
 }

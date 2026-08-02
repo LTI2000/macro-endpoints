@@ -1,6 +1,6 @@
 package io.macroapi.plan;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 
 /**
  * The catamorphism over {@link Plan}: the single recursive traversal shared by every interpreter.
@@ -50,7 +50,7 @@ public final class PlanCata {
      * @param <A>     the plan's result type
      * @return the interpretation of the whole plan
      */
-    public static <F, A> App<F, A> fold(Plan<A> plan, PlanAlgebra<F> algebra) {
+    public static <F, A> Higher<F, A> fold(Plan<A> plan, PlanAlgebra<F> algebra) {
         return switch (plan) {
             // Nodes whose type parameters are fully determined by Plan<A>: matched inline.
             case Pure<A>(var value) -> algebra.pure(value);
@@ -68,41 +68,41 @@ public final class PlanCata {
         };
     }
 
-    private static <F, Q, R> App<F, R> foldInvoke(Invoke<Q, R> node, PlanAlgebra<F> algebra) {
+    private static <F, Q, R> Higher<F, R> foldInvoke(Invoke<Q, R> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Invoke<Q, R>(var endpoint, var request) -> algebra.invoke(endpoint, request);
         };
     }
 
-    private static <F, X, A> App<F, A> foldTransform(Transform<X, A> node, PlanAlgebra<F> algebra) {
+    private static <F, X, A> Higher<F, A> foldTransform(Transform<X, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Transform<X, A>(var source, var function, var label) ->
                     algebra.transform(fold(source, algebra), function, label);
         };
     }
 
-    private static <F, X, Y, A> App<F, A> foldCombine(Combine<X, Y, A> node, PlanAlgebra<F> algebra) {
+    private static <F, X, Y, A> Higher<F, A> foldCombine(Combine<X, Y, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Combine<X, Y, A>(var left, var right, var combiner, var label) ->
                     algebra.combine(fold(left, algebra), fold(right, algebra), combiner, label);
         };
     }
 
-    private static <F, X, A> App<F, A> foldChain(Chain<X, A> node, PlanAlgebra<F> algebra) {
+    private static <F, X, A> Higher<F, A> foldChain(Chain<X, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Chain<X, A>(var source, var continuation, var probe, var label) ->
                     algebra.chain(fold(source, algebra), continuation, probe, label);
         };
     }
 
-    private static <F, G, A> App<F, A> foldFold(Fold<G, A> node, PlanAlgebra<F> algebra) {
+    private static <F, G, A> Higher<F, A> foldFold(Fold<G, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Fold<G, A>(var source, var functor, var elementAlgebra, var label) ->
                     algebra.fold(fold(source, algebra), functor, elementAlgebra, label);
         };
     }
 
-    private static <F, G, S, A> App<F, A> foldHylo(Hylo<G, S, A> node, PlanAlgebra<F> algebra) {
+    private static <F, G, S, A> Higher<F, A> foldHylo(Hylo<G, S, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Hylo<G, S, A>(var seed, var traversal, var coalgebra, var elementAlgebra, var label) ->
                     algebra.hylo(seed, traversal, coalgebra, elementAlgebra, label);

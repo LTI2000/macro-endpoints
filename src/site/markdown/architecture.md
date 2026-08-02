@@ -39,20 +39,20 @@ parameter, because a description of a plan has the same shape whatever the plan 
 cannot express that. The standard workaround, defunctionalisation, is used:
 
 ```java
-public interface App<F, A> { }              // "F applied to A"
+public interface Higher<F, A> { }            // "F applied to A"
 
-public final class Eff<A> implements App<Eff.Witness, A> {
+public final class Eff<A> implements Higher<Eff.Witness, A> {
 
     public static final class Witness {     // uninstantiable brand
         private Witness() { throw new AssertionError("no instances"); }
     }
 
-    public static <A> Eff<A> narrow(App<Witness, A> app) { return (Eff<A>) app; }
+    public static <A> Eff<A> narrow(Higher<Witness, A> higher) { return (Eff<A>) higher; }
 }
 ```
 
 `Witness` has a private constructor and no instances, so `Eff` is the only implementation of
-`App<Eff.Witness, A>` that can exist and the cast inside `narrow` cannot fail. The unchecked casts are confined to a handful of
+`Higher<Eff.Witness, A>` that can exist and the cast inside `narrow` cannot fail. The unchecked casts are confined to a handful of
 `narrow` methods in `io.macroapi.hkt` and `io.macroapi.effect`.
 
 ## Combine is not Chain
@@ -106,7 +106,7 @@ Instead the *reduction* is separated from the *traversal*, in the usual recursio
 **pattern functor** describes one layer with a hole where the recursion goes:
 
 ```java
-public sealed interface ListF<E, A> extends App<ListF.Witness<E>, A> {
+public sealed interface ListF<E, A> extends Higher<ListF.Witness<E>, A> {
     record Nil<E, A>() implements ListF<E, A> { }
     record Cons<E, A>(E head, A tail) implements ListF<E, A> { }
 }
@@ -204,7 +204,7 @@ whose type parameter binds the capture once:
 ```java
 case Transform<?, A> node -> foldTransform(node, algebra);
 
-private static <F, X, A> App<F, A> foldTransform(Transform<X, A> node, PlanAlgebra<F> algebra) {
+private static <F, X, A> Higher<F, A> foldTransform(Transform<X, A> node, PlanAlgebra<F> algebra) {
     return switch (node) {
         case Transform<X, A>(var source, var function, var label) ->
                 algebra.transform(fold(source, algebra), function, label);
@@ -223,7 +223,7 @@ have identical bodies they must be written as separate arms delegating to a comm
 
 | Package | Responsibility |
 |---|---|
-| `io.macroapi.hkt` | `App`, `Functor`, `Applicative`, `Traverse`, `Algebra`, `Fix`, `Recursion` |
+| `io.macroapi.hkt` | `Higher`, `Functor`, `Applicative`, `Traverse`, `Algebra`, `Fix`, `Recursion` |
 | `io.macroapi.effect` | `Eff`, `Outcome`, `ApiError`, `Kleisli`, `Endpoint`, `RetryPolicy` |
 | `io.macroapi.plan` | `Plan` and its ten nodes, `PlanAlgebra`, `PlanCata`, `Plans` |
 | `io.macroapi.structure` | Pattern functors: `ListF`, `TreeF` |

@@ -3,7 +3,7 @@ package io.macroapi.interpret;
 import io.macroapi.effect.ApiError;
 import io.macroapi.effect.Endpoint;
 import io.macroapi.hkt.Algebra;
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 import io.macroapi.hkt.Fix;
 import io.macroapi.hkt.Functor;
 import io.macroapi.hkt.Traverse;
@@ -43,18 +43,18 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
     }
 
     @Override
-    public <A> App<Const.Witness<CallGraph>, A> pure(A value) {
+    public <A> Higher<Const.Witness<CallGraph>, A> pure(A value) {
         return Const.of(CallGraph.EMPTY);
     }
 
     @Override
-    public <A> App<Const.Witness<CallGraph>, A> failed(ApiError error) {
+    public <A> Higher<Const.Witness<CallGraph>, A> failed(ApiError error) {
         return Const.of(CallGraph.single(new CallGraph.GraphNode(
                 nextId("fail"), "fail", CallGraph.NodeKind.FAILURE, error.describe())));
     }
 
     @Override
-    public <Q, R> App<Const.Witness<CallGraph>, R> invoke(Endpoint<Q, R> endpoint, Q request) {
+    public <Q, R> Higher<Const.Witness<CallGraph>, R> invoke(Endpoint<Q, R> endpoint, Q request) {
         return Const.of(CallGraph.single(new CallGraph.GraphNode(
                 nextId("ep"), endpoint.spec().name(), CallGraph.NodeKind.ENDPOINT,
                 endpoint.spec().signature())));
@@ -67,17 +67,17 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
      * dependency, so the fragment passes through unchanged.</p>
      */
     @Override
-    public <X, A> App<Const.Witness<CallGraph>, A> transform(App<Const.Witness<CallGraph>, X> source,
-                                                             Function<? super X, ? extends A> function,
-                                                             String label) {
+    public <X, A> Higher<Const.Witness<CallGraph>, A> transform(Higher<Const.Witness<CallGraph>, X> source,
+                                                                Function<? super X, ? extends A> function,
+                                                                String label) {
         return Const.<CallGraph, X>narrow(source).retag();
     }
 
     @Override
-    public <X, Y, A> App<Const.Witness<CallGraph>, A> combine(App<Const.Witness<CallGraph>, X> left,
-                                                              App<Const.Witness<CallGraph>, Y> right,
-                                                              BiFunction<? super X, ? super Y, ? extends A> combiner,
-                                                              String label) {
+    public <X, Y, A> Higher<Const.Witness<CallGraph>, A> combine(Higher<Const.Witness<CallGraph>, X> left,
+                                                                 Higher<Const.Witness<CallGraph>, Y> right,
+                                                                 BiFunction<? super X, ? super Y, ? extends A> combiner,
+                                                                 String label) {
         return Const.of(Const.unwrap(left).alongside(Const.unwrap(right)));
     }
 
@@ -89,10 +89,10 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
      * one, a diamond marks the frontier so the diagram does not silently under-report.</p>
      */
     @Override
-    public <X, A> App<Const.Witness<CallGraph>, A> chain(App<Const.Witness<CallGraph>, X> source,
-                                                         Function<? super X, Plan<A>> continuation,
-                                                         Optional<X> staticProbe,
-                                                         String label) {
+    public <X, A> Higher<Const.Witness<CallGraph>, A> chain(Higher<Const.Witness<CallGraph>, X> source,
+                                                            Function<? super X, Plan<A>> continuation,
+                                                            Optional<X> staticProbe,
+                                                            String label) {
         CallGraph upstream = Const.unwrap(source);
         CallGraph downstream = staticProbe
                 .map(probe -> graphOf(continuation.apply(probe)))
@@ -102,8 +102,8 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
     }
 
     @Override
-    public <A> App<Const.Witness<CallGraph>, A> recover(App<Const.Witness<CallGraph>, A> source,
-                                                        Function<? super ApiError, Plan<A>> handler) {
+    public <A> Higher<Const.Witness<CallGraph>, A> recover(Higher<Const.Witness<CallGraph>, A> source,
+                                                           Function<? super ApiError, Plan<A>> handler) {
         CallGraph guarded = Const.unwrap(source);
         CallGraph fallback = graphOf(handler.apply(new ApiError.Synthetic("graph probe")));
         if (fallback.isEmpty()) {
@@ -119,15 +119,15 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
     }
 
     @Override
-    public <A> App<Const.Witness<CallGraph>, A> labeled(String name, App<Const.Witness<CallGraph>, A> inner) {
+    public <A> Higher<Const.Witness<CallGraph>, A> labeled(String name, Higher<Const.Witness<CallGraph>, A> inner) {
         return Const.of(Const.unwrap(inner).inCluster(name));
     }
 
     @Override
-    public <G, A> App<Const.Witness<CallGraph>, A> fold(App<Const.Witness<CallGraph>, Fix<G>> source,
-                                                        Functor<G> functor,
-                                                        Algebra<G, A> algebra,
-                                                        String label) {
+    public <G, A> Higher<Const.Witness<CallGraph>, A> fold(Higher<Const.Witness<CallGraph>, Fix<G>> source,
+                                                           Functor<G> functor,
+                                                           Algebra<G, A> algebra,
+                                                           String label) {
         CallGraph reduction = CallGraph.single(new CallGraph.GraphNode(
                 nextId("cata"), label, CallGraph.NodeKind.REDUCTION, "catamorphism"));
         return Const.of(Const.unwrap(source).then(reduction, CallGraph.EdgeKind.SEQUENTIAL));
@@ -141,11 +141,11 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
      * where the algebra consumes the layers.</p>
      */
     @Override
-    public <G, S, A> App<Const.Witness<CallGraph>, A> hylo(S seed,
-                                                           Traverse<G> traversal,
-                                                           PlanCoalgebra<G, S> coalgebra,
-                                                           Algebra<G, A> algebra,
-                                                           String label) {
+    public <G, S, A> Higher<Const.Witness<CallGraph>, A> hylo(S seed,
+                                                              Traverse<G> traversal,
+                                                              PlanCoalgebra<G, S> coalgebra,
+                                                              Algebra<G, A> algebra,
+                                                              String label) {
         CallGraph.GraphNode loop = new CallGraph.GraphNode(
                 nextId("loop"), label, CallGraph.NodeKind.RECURSION, "unfold from " + seed);
         CallGraph.GraphNode reduction = new CallGraph.GraphNode(

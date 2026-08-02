@@ -1,6 +1,6 @@
 package io.macroapi.interpret;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 
 import java.util.Objects;
 
@@ -10,7 +10,7 @@ import java.util.Objects;
  * <p>Every static interpreter uses this as its carrier. A documenting interpreter produces an
  * {@link Outline} for a {@code Plan<Customer>} and an {@code Outline} for a {@code Plan<Order>} —
  * the same type regardless of what the plan computes. {@link io.macroapi.plan.PlanAlgebra} demands
- * a carrier of the form {@code App<F, A>}, and {@code Const} supplies one by ignoring {@code A}.</p>
+ * a carrier of the form {@code Higher<F, A>}, and {@code Const} supplies one by ignoring {@code A}.</p>
  *
  * <p>This is what lets a single fold serve both a real effect, where the result type matters, and
  * an analysis, where it does not.</p>
@@ -19,7 +19,7 @@ import java.util.Objects;
  * @param <M>   the type actually carried
  * @param <A>   the ignored phantom type
  */
-public record Const<M, A>(M value) implements App<Const.Witness<M>, A> {
+public record Const<M, A>(M value) implements Higher<Const.Witness<M>, A> {
 
     /**
      * Uninhabited type-level tag standing for the partially applied constructor {@code Const<M, _>}.
@@ -67,28 +67,28 @@ public record Const<M, A>(M value) implements App<Const.Witness<M>, A> {
     }
 
     /**
-     * Recovers the concrete type from its {@link App} encoding; see {@link App} for why this cast is
+     * Recovers the concrete type from its {@link Higher} encoding; see {@link Higher} for why this cast is
      * safe.
      *
-     * @param app the encoded value
+     * @param higher the encoded value
      * @param <M> the carried type
      * @param <A> the phantom type
      * @return the same value, statically typed
      */
     @SuppressWarnings("unchecked")
-    public static <M, A> Const<M, A> narrow(App<Witness<M>, A> app) {
-        return (Const<M, A>) app;
+    public static <M, A> Const<M, A> narrow(Higher<Witness<M>, A> higher) {
+        return (Const<M, A>) higher;
     }
 
     /**
      * Extracts the carried value from an encoded constant.
      *
-     * @param app the encoded value
+     * @param higher the encoded value
      * @param <M> the carried type
      * @param <A> the phantom type
      * @return the carried value
      */
-    public static <M, A> M unwrap(App<Witness<M>, A> app) {
-        return narrow(app).value();
+    public static <M, A> M unwrap(Higher<Witness<M>, A> higher) {
+        return narrow(higher).value();
     }
 }

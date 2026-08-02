@@ -25,5 +25,5 @@ public interface Algebra<F, A> {
      * @param layer one layer of structure, with sub-results in place of sub-structures
      * @return the carrier value for this layer
      */
-    A apply(App<F, A> layer);
+    A apply(Higher<F, A> layer);
 }

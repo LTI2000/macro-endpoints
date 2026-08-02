@@ -29,5 +29,5 @@ public interface Functor<F> {
      * @param <B> the target element type
      * @return the structure with all element positions transformed
      */
-    <A, B> App<F, B> map(App<F, A> fa, Function<? super A, ? extends B> fn);
+    <A, B> Higher<F, B> map(Higher<F, A> fa, Function<? super A, ? extends B> fn);
 }

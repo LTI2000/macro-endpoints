@@ -3,8 +3,8 @@
  *
  * <p>Java has no higher-kinded types: one cannot write {@code F<A>} with {@code F} as a parameter.
  * The interpreters need exactly that, because a single fold has to produce an {@code Eff<A>} for one
- * interpretation and a plain {@code Outline} for another. {@link io.macroapi.hkt.App} supplies the
- * standard workaround — defunctionalisation, after Yallop and White — in which {@code App<F, A>}
+ * interpretation and a plain {@code Outline} for another. {@link io.macroapi.hkt.Higher} supplies the
+ * standard workaround — defunctionalisation, after Yallop and White — in which {@code Higher<F, A>}
  * stands for the application of a brand {@code F} to an argument {@code A}, and each type
  * constructor provides a {@code narrow} method to recover its concrete form.</p>
  *

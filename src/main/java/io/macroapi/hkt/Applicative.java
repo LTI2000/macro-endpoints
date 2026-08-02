@@ -25,7 +25,7 @@ public interface Applicative<F> extends Functor<F> {
      * @param <A>   the value type
      * @return the value embedded in {@code F}
      */
-    <A> App<F, A> pure(A value);
+    <A> Higher<F, A> pure(A value);
 
     /**
      * Combines two <em>independent</em> effects with a binary function.
@@ -38,7 +38,7 @@ public interface Applicative<F> extends Functor<F> {
      * @param <C> combined result type
      * @return an effect producing the combination of both results
      */
-    <A, B, C> App<F, C> map2(App<F, A> fa, App<F, B> fb, BiFunction<? super A, ? super B, ? extends C> fn);
+    <A, B, C> Higher<F, C> map2(Higher<F, A> fa, Higher<F, B> fb, BiFunction<? super A, ? super B, ? extends C> fn);
 
     /**
      * Turns a list of effects into a single effect producing the list of results, preserving order.
@@ -50,9 +50,9 @@ public interface Applicative<F> extends Functor<F> {
      * @param <A>   the element type
      * @return one effect yielding all results in the original order
      */
-    default <A> App<F, List<A>> sequence(List<App<F, A>> items) {
-        App<F, List<A>> accumulator = pure(List.of());
-        for (App<F, A> item : items) {
+    default <A> Higher<F, List<A>> sequence(List<Higher<F, A>> items) {
+        Higher<F, List<A>> accumulator = pure(List.of());
+        for (Higher<F, A> item : items) {
             accumulator = this.<List<A>, A, List<A>>map2(accumulator, item, (soFar, next) -> {
                 List<A> grown = new ArrayList<>(soFar);
                 grown.add(next);

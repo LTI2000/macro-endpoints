@@ -13,6 +13,7 @@ import io.macroapi.demo.Storefront.PageCursor;
 import io.macroapi.demo.Storefront.Tier;
 import io.macroapi.effect.ApiError;
 import io.macroapi.hkt.Algebra;
+import io.macroapi.hkt.Higher;
 import io.macroapi.macro.Macro;
 import io.macroapi.macro.MacroRegistry;
 import io.macroapi.macro.MacroSpec;
@@ -133,8 +134,8 @@ public final class StorefrontMacros {
         };
     }
 
-    private Plan<io.macroapi.hkt.App<ListF.Witness<OrderPage>, PageCursor>> fetchPage(String customerId,
-                                                                                      PageCursor cursor) {
+    private Plan<Higher<ListF.Witness<OrderPage>, PageCursor>> fetchPage(String customerId,
+                                                                         PageCursor cursor) {
         return Plans.call(api.listOrders, new OrderPageRequest(customerId, cursor))
                 .map(page -> new ListF.Cons<>(page, nextCursor(page)), "advance cursor");
     }

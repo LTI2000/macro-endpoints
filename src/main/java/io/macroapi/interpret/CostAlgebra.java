@@ -2,11 +2,8 @@ package io.macroapi.interpret;
 
 import io.macroapi.effect.ApiError;
 import io.macroapi.effect.Endpoint;
-import io.macroapi.hkt.Algebra;
-import io.macroapi.hkt.App;
-import io.macroapi.hkt.Fix;
-import io.macroapi.hkt.Functor;
-import io.macroapi.hkt.Traverse;
+import io.macroapi.hkt.*;
+import io.macroapi.hkt.Higher;
 import io.macroapi.plan.Plan;
 import io.macroapi.plan.PlanAlgebra;
 import io.macroapi.plan.PlanCata;
@@ -47,70 +44,70 @@ public final class CostAlgebra implements PlanAlgebra<Const.Witness<Cost>> {
     }
 
     @Override
-    public <A> App<Const.Witness<Cost>, A> pure(A value) {
+    public <A> Higher<Const.Witness<Cost>, A> pure(A value) {
         return Const.of(Cost.FREE);
     }
 
     @Override
-    public <A> App<Const.Witness<Cost>, A> failed(ApiError error) {
+    public <A> Higher<Const.Witness<Cost>, A> failed(ApiError error) {
         return Const.of(Cost.FREE);
     }
 
     @Override
-    public <Q, R> App<Const.Witness<Cost>, R> invoke(Endpoint<Q, R> endpoint, Q request) {
+    public <Q, R> Higher<Const.Witness<Cost>, R> invoke(Endpoint<Q, R> endpoint, Q request) {
         return Const.of(new Cost(endpoint.spec().typicalLatency(), endpoint.spec().costUnits(), 1));
     }
 
     @Override
-    public <X, A> App<Const.Witness<Cost>, A> transform(App<Const.Witness<Cost>, X> source,
-                                                        Function<? super X, ? extends A> function,
-                                                        String label) {
+    public <X, A> Higher<Const.Witness<Cost>, A> transform(Higher<Const.Witness<Cost>, X> source,
+                                                           Function<? super X, ? extends A> function,
+                                                           String label) {
         return Const.<Cost, X>narrow(source).retag();
     }
 
     @Override
-    public <X, Y, A> App<Const.Witness<Cost>, A> combine(App<Const.Witness<Cost>, X> left,
-                                                         App<Const.Witness<Cost>, Y> right,
-                                                         BiFunction<? super X, ? super Y, ? extends A> combiner,
-                                                         String label) {
+    public <X, Y, A> Higher<Const.Witness<Cost>, A> combine(Higher<Const.Witness<Cost>, X> left,
+                                                            Higher<Const.Witness<Cost>, Y> right,
+                                                            BiFunction<? super X, ? super Y, ? extends A> combiner,
+                                                            String label) {
         return Const.of(Const.unwrap(left).alongside(Const.unwrap(right)));
     }
 
     @Override
-    public <X, A> App<Const.Witness<Cost>, A> chain(App<Const.Witness<Cost>, X> source,
-                                                    Function<? super X, Plan<A>> continuation,
-                                                    Optional<X> staticProbe,
-                                                    String label) {
+    public <X, A> Higher<Const.Witness<Cost>, A> chain(Higher<Const.Witness<Cost>, X> source,
+                                                       Function<? super X, Plan<A>> continuation,
+                                                       Optional<X> staticProbe,
+                                                       String label) {
         Cost upstream = Const.unwrap(source);
         Cost downstream = staticProbe.map(probe -> costOf(continuation.apply(probe))).orElse(Cost.FREE);
         return Const.of(upstream.then(downstream));
     }
 
     @Override
-    public <A> App<Const.Witness<Cost>, A> recover(App<Const.Witness<Cost>, A> source,
-                                                   Function<? super ApiError, Plan<A>> handler) {
+    public <A> Higher<Const.Witness<Cost>, A> recover(Higher<Const.Witness<Cost>, A> source,
+                                                      Function<? super ApiError, Plan<A>> handler) {
         return Const.<Cost, A>narrow(source).retag();
     }
 
     @Override
-    public <A> App<Const.Witness<Cost>, A> labeled(String name, App<Const.Witness<Cost>, A> inner) {
+    public <A> Higher<Const.Witness<Cost>, A> labeled(String name, Higher<Const.Witness<Cost>, A> inner) {
         return Const.<Cost, A>narrow(inner).retag();
     }
 
     @Override
-    public <G, A> App<Const.Witness<Cost>, A> fold(App<Const.Witness<Cost>, Fix<G>> source,
-                                                   Functor<G> functor,
-                                                   Algebra<G, A> algebra,
-                                                   String label) {
+    public <G, A> Higher<Const.Witness<Cost>, A> fold(Higher<Const.Witness<Cost>, Fix<G>> source,
+                                                      Functor<G> functor,
+                                                      Algebra<G, A> algebra,
+                                                      String label) {
         return Const.<Cost, Fix<G>>narrow(source).retag();
     }
 
     @Override
-    public <G, S, A> App<Const.Witness<Cost>, A> hylo(S seed,
-                                                      Traverse<G> traversal,
-                                                      PlanCoalgebra<G, S> coalgebra,
-                                                      Algebra<G, A> algebra,
-                                                      String label) {
+    public <G, S, A> Higher<Const.Witness<Cost>, A> hylo(S seed,
+                                                         Traverse<G> traversal,
+                                                         PlanCoalgebra<G, S> coalgebra,
+                                                         Algebra<G, A> algebra,
+                                                         String label) {
         return Const.of(costOf(coalgebra.step(seed)).times(loopFactor));
     }
 

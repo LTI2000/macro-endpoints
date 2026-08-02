@@ -15,7 +15,7 @@ import java.util.Objects;
  * @param unfix the single unwrapped layer, whose recursive positions hold further fixed points
  * @param <F>   witness for the pattern functor
  */
-public record Fix<F>(App<F, Fix<F>> unfix) {
+public record Fix<F>(Higher<F, Fix<F>> unfix) {
 
     /**
      * Canonical constructor, rejecting a null layer.
@@ -35,7 +35,7 @@ public record Fix<F>(App<F, Fix<F>> unfix) {
      * @param <F>   witness for the pattern functor
      * @return the wrapped layer
      */
-    public static <F> Fix<F> wrap(App<F, Fix<F>> layer) {
+    public static <F> Fix<F> wrap(Higher<F, Fix<F>> layer) {
         return new Fix<>(layer);
     }
 }

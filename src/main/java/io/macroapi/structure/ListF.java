@@ -1,6 +1,6 @@
 package io.macroapi.structure;
 
-import io.macroapi.hkt.App;
+import io.macroapi.hkt.Higher;
 import io.macroapi.hkt.Applicative;
 import io.macroapi.hkt.Traverse;
 
@@ -19,7 +19,7 @@ import java.util.function.Function;
  * @param <A> the recursive position, which is a further {@code ListF} layer in a fixed point and a
  *            reduced value during a fold
  */
-public sealed interface ListF<E, A> extends App<ListF.Witness<E>, A> {
+public sealed interface ListF<E, A> extends Higher<ListF.Witness<E>, A> {
 
     /**
      * Uninhabited type-level tag standing for the partially applied constructor {@code ListF<E, _>}.
@@ -53,17 +53,17 @@ public sealed interface ListF<E, A> extends App<ListF.Witness<E>, A> {
     }
 
     /**
-     * Recovers the concrete type from its {@link App} encoding; see {@link App} for why this cast is
+     * Recovers the concrete type from its {@link Higher} encoding; see {@link Higher} for why this cast is
      * safe.
      *
-     * @param app the encoded layer
+     * @param higher the encoded layer
      * @param <E> the element type
      * @param <A> the recursive position
      * @return the same value, statically typed
      */
     @SuppressWarnings("unchecked")
-    static <E, A> ListF<E, A> narrow(App<Witness<E>, A> app) {
-        return (ListF<E, A>) app;
+    static <E, A> ListF<E, A> narrow(Higher<Witness<E>, A> higher) {
+        return (ListF<E, A>) higher;
     }
 
     /**
@@ -79,7 +79,7 @@ public sealed interface ListF<E, A> extends App<ListF.Witness<E>, A> {
     static <E> Traverse<Witness<E>> traversal() {
         return new Traverse<Witness<E>>() {
             @Override
-            public <A, B> App<Witness<E>, B> map(App<Witness<E>, A> fa, Function<? super A, ? extends B> fn) {
+            public <A, B> Higher<Witness<E>, B> map(Higher<Witness<E>, A> fa, Function<? super A, ? extends B> fn) {
                 return switch (narrow(fa)) {
                     case Nil<E, A>() -> new Nil<>();
                     case Cons<E, A>(var head, var tail) -> new Cons<>(head, fn.apply(tail));
@@ -87,13 +87,13 @@ public sealed interface ListF<E, A> extends App<ListF.Witness<E>, A> {
             }
 
             @Override
-            public <G, A, B> App<G, App<Witness<E>, B>> traverse(Applicative<G> applicative,
-                                                                 App<Witness<E>, A> fa,
-                                                                 Function<? super A, ? extends App<G, B>> fn) {
+            public <G, A, B> Higher<G, Higher<Witness<E>, B>> traverse(Applicative<G> applicative,
+                                                                       Higher<Witness<E>, A> fa,
+                                                                       Function<? super A, ? extends Higher<G, B>> fn) {
                 return switch (narrow(fa)) {
                     case Nil<E, A>() -> applicative.pure(new Nil<E, B>());
                     case Cons<E, A>(var head, var tail) ->
-                            applicative.<B, App<Witness<E>, B>>map(fn.apply(tail), rest -> new Cons<>(head, rest));
+                            applicative.<B, Higher<Witness<E>, B>>map(fn.apply(tail), rest -> new Cons<>(head, rest));
                 };
             }
         };
