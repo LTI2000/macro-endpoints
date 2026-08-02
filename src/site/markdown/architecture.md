@@ -43,7 +43,7 @@ public interface Higher<F, A> { }            // "F applied to A"
 
 public final class Eff<A> implements Higher<Eff.Witness, A> {
 
-    public static final class Witness {     // uninstantiable brand
+    public static final class Witness {     // uninstantiable witness
         private Witness() { throw new AssertionError("no instances"); }
     }
 

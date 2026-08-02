@@ -10,7 +10,7 @@ package io.macroapi.hkt;
  * a plan" — which is exactly what a catamorphism over a typed syntax tree needs. This interface
  * applies the well known defunctionalisation trick (Yallop &amp; White, <em>Lightweight
  * higher-kinded polymorphism</em>, FLOPS 2014): the type constructor is represented by an ordinary
- * <em>witness</em> (or <em>brand</em>) type {@code F}, and the application {@code F<A>} is
+ * <em>witness</em> type {@code F}, and the application {@code F<A>} is
  * represented by the ordinary type {@code Higher<F, A>}.</p>
  *
  * <p>The convention used throughout this project is:</p>

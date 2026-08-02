@@ -99,8 +99,8 @@ composition means, so they live in `ApiRuntime` and `RetryPolicy`. Had they been
 interpreter would have had to handle them and the cost model would have had to guess at retry counts.
 
 **Higher-kinded types are emulated.** `PlanAlgebra` is parameterised by its carrier, which is a type
-constructor — inexpressible in Java. The standard defunctionalisation is used: `App<F, A>` stands for
-`F` applied to `A`, each constructor supplies a `narrow` method, and brands are uninstantiable so the
+constructor — inexpressible in Java. The standard defunctionalisation is used: `Higher<F, A>` stands for
+`F` applied to `A`, each constructor supplies a `narrow` method, and witnesses are uninstantiable so the
 casts cannot fail. They are confined to a handful of `narrow` methods.
 
 ## A finding about record patterns
