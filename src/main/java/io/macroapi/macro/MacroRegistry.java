@@ -116,6 +116,7 @@ public final class MacroRegistry {
     public MacroRegistry() {
     }
 
+    /** Registered macros keyed by name, in insertion order so documentation lists stay stable. */
     private final Map<String, Entry<?, ?>> entries = new LinkedHashMap<>();
 
     /**

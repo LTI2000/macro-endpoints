@@ -10,6 +10,7 @@ package io.macroapi.hkt;
  */
 public final class Recursion {
 
+    /** Not instantiable; this class is a holder for static recursion schemes. */
     private Recursion() {
         throw new AssertionError("no instances");
     }

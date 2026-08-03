@@ -106,6 +106,13 @@ public final class OutlineAlgebra implements PlanAlgebra<Const.Witness<Outline>>
                 Outline.leaf("catamorphism", "reduce each layer as its children complete")));
     }
 
+    /**
+     * Folds a nested sub-plan through this same interpreter to outline it, used wherever a node
+     * needs to describe a plan it discovered while probing.
+     *
+     * @param plan the sub-plan to outline
+     * @return the outline for {@code plan}
+     */
     private Outline describe(Plan<?> plan) {
         return Const.unwrap(PlanCata.fold(plan, this));
     }

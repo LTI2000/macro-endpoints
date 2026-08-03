@@ -27,6 +27,7 @@ import java.util.function.Function;
  */
 public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
 
+    /** The runtime supplying the retry policy and trace sink each interpreted call is layered with. */
     private final ApiRuntime runtime;
 
     /**
@@ -142,6 +143,19 @@ public final class ExecutionAlgebra implements PlanAlgebra<Eff.Witness> {
         return expand(seed, traversal, coalgebra, algebra);
     }
 
+    /**
+     * The recursive worker behind {@link #hylo}: interprets one layer from the seed, expands its
+     * recursive positions through the traversal's applicative, and reduces with the algebra.
+     *
+     * @param seed      the seed for the layer being grown
+     * @param traversal the traversable that decides whether siblings expand sequentially or in parallel
+     * @param coalgebra unfolds a seed into one layer of the structure
+     * @param algebra   reduces a layer once its children have themselves been reduced
+     * @param <G>       the shape functor of the structure
+     * @param <S>       the seed type
+     * @param <A>       the reduced result type
+     * @return the effect that expands and reduces the subtree rooted at {@code seed}
+     */
     private <G, S, A> Eff<A> expand(S seed,
                                     Traverse<G> traversal,
                                     PlanCoalgebra<G, S> coalgebra,

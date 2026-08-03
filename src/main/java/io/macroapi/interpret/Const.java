@@ -27,6 +27,7 @@ public record Const<M, A>(M value) implements Higher<Const.Witness<M>, A> {
      * @param <M> the carried type held fixed by the partial application
      */
     public static final class Witness<M> {
+        /** Not instantiable; the tag exists only at the type level. */
         private Witness() {
             throw new AssertionError("no instances");
         }

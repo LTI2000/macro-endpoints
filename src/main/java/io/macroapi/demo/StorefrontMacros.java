@@ -40,6 +40,7 @@ import java.util.Optional;
  */
 public final class StorefrontMacros {
 
+    /** The low-level endpoints every macro here is composed from. */
     private final StorefrontApi api;
 
     /**
@@ -134,12 +135,28 @@ public final class StorefrontMacros {
         };
     }
 
+    /**
+     * Fetches one order page and pairs it with the seed for the next layer.
+     *
+     * <p>The returned {@link ListF.Cons} carries the page as this layer's value and the cursor
+     * derived from it as the recursive position the unfold continues from.</p>
+     *
+     * @param customerId whose orders to read
+     * @param cursor     where this page starts
+     * @return the plan for one page layer of the chain
+     */
     private Plan<Higher<ListF.Witness<OrderPage>, PageCursor>> fetchPage(String customerId,
                                                                          PageCursor cursor) {
         return Plans.call(api.listOrders, new OrderPageRequest(customerId, cursor))
                 .map(page -> new ListF.Cons<>(page, nextCursor(page)), "advance cursor");
     }
 
+    /**
+     * Derives the seed for the next page from the cursor a page returned.
+     *
+     * @param page the page just fetched
+     * @return a {@link PageCursor.Next} when more remains, {@link PageCursor.Exhausted} otherwise
+     */
     private static PageCursor nextCursor(OrderPage page) {
         return page.nextCursor()
                 .<PageCursor>map(PageCursor.Next::new)
@@ -235,6 +252,15 @@ public final class StorefrontMacros {
                                 "platinum customers get a concierge"));
     }
 
+    /**
+     * Attaches a concierge to a platinum customer's dashboard, leaving others untouched.
+     *
+     * <p>The continuation of the dashboard's conditional branch: a platinum tier triggers the extra
+     * concierge lookup, while a standard tier passes the dashboard through unchanged.</p>
+     *
+     * @param dashboard the gathered dashboard to enrich
+     * @return the plan for the possibly enriched dashboard
+     */
     private Plan<Dashboard> attachConciergeIfPlatinum(Dashboard dashboard) {
         return switch (dashboard.customer().tier()) {
             case PLATINUM -> Plans.call(api.getConcierge, dashboard.customer().id())
@@ -249,6 +275,9 @@ public final class StorefrontMacros {
      * <p>It names the platinum tier so that static analysis explores the branch that makes an extra
      * call — the conservative choice for a cost budget, and the more informative one for a diagram.
      * The value never reaches execution.</p>
+     *
+     * @param customerId the customer the probe stands in for
+     * @return a platinum-tier placeholder dashboard
      */
     private static Dashboard probeDashboard(String customerId) {
         return new Dashboard(

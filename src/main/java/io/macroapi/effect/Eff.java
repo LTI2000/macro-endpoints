@@ -48,13 +48,20 @@ public final class Eff<A> implements Higher<Eff.Witness, A> {
      * {@link Higher}-encoded signatures.
      */
     public static final class Witness {
+        /** Not instantiable; the tag exists only at the type level. */
         private Witness() {
             throw new AssertionError("no instances");
         }
     }
 
+    /** The deferred work: a thunk that starts a fresh future each time it is invoked. */
     private final Supplier<CompletableFuture<Outcome<A>>> body;
 
+    /**
+     * Canonical constructor.
+     *
+     * @param body the work starter, which must begin a fresh unit of work on every call
+     */
     private Eff(Supplier<CompletableFuture<Outcome<A>>> body) {
         this.body = Objects.requireNonNull(body, "body");
     }
@@ -288,6 +295,7 @@ public final class Eff<A> implements Higher<Eff.Witness, A> {
         return (Eff<A>) higher;
     }
 
+    /** The shared, stateless applicative instance returned by {@link #applicative()}. */
     private static final Applicative<Witness> APPLICATIVE = new Applicative<>() {
         @Override
         public <A> Higher<Witness, A> pure(A value) {

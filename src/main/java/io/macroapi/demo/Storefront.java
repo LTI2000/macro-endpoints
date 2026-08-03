@@ -14,6 +14,7 @@ import java.util.Optional;
  */
 public final class Storefront {
 
+    /** Not instantiable; this class is only a namespace for the domain records. */
     private Storefront() {
         throw new AssertionError("no instances");
     }

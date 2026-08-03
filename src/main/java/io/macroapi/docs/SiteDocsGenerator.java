@@ -27,6 +27,7 @@ import java.util.Map;
  */
 public final class SiteDocsGenerator {
 
+    /** Not instantiable; entry is through {@link #main} or {@link #write}. */
     private SiteDocsGenerator() {
         throw new AssertionError("no instances");
     }
@@ -80,6 +81,13 @@ public final class SiteDocsGenerator {
         }
     }
 
+    /**
+     * Builds the Markdown catalogue page: the registry's own macro descriptions, followed by the
+     * per-macro dependency diagrams and the list of endpoints those graphs can reach.
+     *
+     * @param registry the macros to document
+     * @return the complete Markdown page
+     */
     private static String page(MacroRegistry registry) {
         StringBuilder out = new StringBuilder(registry.markdown("Macro catalogue"));
         out.append("\n## Call dependency diagrams\n\n");

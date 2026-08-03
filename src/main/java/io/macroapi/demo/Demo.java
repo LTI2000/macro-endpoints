@@ -23,6 +23,7 @@ import java.time.Instant;
  */
 public final class Demo {
 
+    /** Not instantiable; this class is only an entry point. */
     private Demo() {
         throw new AssertionError("no instances");
     }
@@ -114,6 +115,11 @@ public final class Demo {
         }
     }
 
+    /**
+     * Prints a section title, framed by rules, to separate the tour's stages.
+     *
+     * @param title the section heading to print
+     */
     private static void heading(String title) {
         System.out.println();
         System.out.println("=".repeat(78));

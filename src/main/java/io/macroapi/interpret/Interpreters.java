@@ -15,6 +15,7 @@ import io.macroapi.plan.PlanCata;
  */
 public final class Interpreters {
 
+    /** Not instantiable; this class is a holder for static entry points. */
     private Interpreters() {
         throw new AssertionError("no instances");
     }

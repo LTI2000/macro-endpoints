@@ -29,6 +29,7 @@ import java.util.Objects;
  */
 public final class Plans {
 
+    /** Not instantiable; this class is a holder for static factory methods. */
     private Plans() {
         throw new AssertionError("no instances");
     }

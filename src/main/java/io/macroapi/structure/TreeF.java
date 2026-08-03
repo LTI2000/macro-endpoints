@@ -29,6 +29,7 @@ public sealed interface TreeF<E, A> extends Higher<TreeF.Witness<E>, A> {
      * @param <E> the label type held fixed by the partial application
      */
     final class Witness<E> {
+        /** Not instantiable; the tag exists only at the type level. */
         private Witness() {
             throw new AssertionError("no instances");
         }

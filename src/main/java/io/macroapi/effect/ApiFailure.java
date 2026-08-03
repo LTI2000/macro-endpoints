@@ -13,8 +13,10 @@ import java.util.Objects;
  */
 public final class ApiFailure extends RuntimeException {
 
+    /** Serialization version; this type carries no serializable state of its own. */
     private static final long serialVersionUID = 1L;
 
+    /** The failure value being carried across the throwing boundary. */
     private final transient ApiError error;
 
     /**

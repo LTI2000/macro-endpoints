@@ -29,6 +29,7 @@ import java.util.function.Function;
  */
 public final class CostAlgebra implements PlanAlgebra<Const.Witness<Cost>> {
 
+    /** The assumed iteration count charged to every recursive node, since none is statically known. */
     private final int loopFactor;
 
     /**
@@ -111,6 +112,13 @@ public final class CostAlgebra implements PlanAlgebra<Const.Witness<Cost>> {
         return Const.of(costOf(coalgebra.step(seed)).times(loopFactor));
     }
 
+    /**
+     * Folds a sub-plan through this same interpreter to obtain its cost, used to cost continuations
+     * and loop bodies discovered while descending the tree.
+     *
+     * @param plan the sub-plan to estimate
+     * @return its projected cost
+     */
     private Cost costOf(Plan<?> plan) {
         return Const.unwrap(PlanCata.fold(plan, this));
     }

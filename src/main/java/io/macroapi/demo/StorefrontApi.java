@@ -41,16 +41,21 @@ public final class StorefrontApi implements AutoCloseable {
     public StorefrontApi() {
     }
 
+    /** How many orders each page of order history returns. */
     private static final int PAGE_SIZE = 3;
 
+    /** Runs endpoint bodies off the caller's thread, so the interpreter's fan-out really overlaps. */
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    /** Counts every endpoint body that actually runs, for comparison against the static estimate. */
     private final AtomicInteger callCount = new AtomicInteger();
 
+    /** The customer records this API serves, keyed by identifier. */
     private final Map<String, Customer> customers = Map.of(
             "c-1", new Customer("c-1", "Ada Lovelace", Tier.PLATINUM),
             "c-2", new Customer("c-2", "Alan Turing", Tier.STANDARD),
             "c-3", new Customer("c-3", "Grace Hopper", Tier.STANDARD));
 
+    /** Each customer's order history, keyed by customer identifier, paged in blocks of {@link #PAGE_SIZE}. */
     private final Map<String, List<Order>> orders = Map.of(
             "c-1", List.of(
                     order("o-1", "120.00"), order("o-2", "35.50"), order("o-3", "480.00"),
@@ -59,6 +64,7 @@ public final class StorefrontApi implements AutoCloseable {
             "c-2", List.of(order("o-8", "55.00"), order("o-9", "23.10")),
             "c-3", List.of());
 
+    /** The product category tree, flattened into a map from identifier to node. */
     private final Map<String, Category> categories = Map.of(
             "root", new Category("root", "All products", 0, List.of("apparel", "tech")),
             "apparel", new Category("apparel", "Apparel", 120, List.of("shoes")),
@@ -67,6 +73,13 @@ public final class StorefrontApi implements AutoCloseable {
             "laptops", new Category("laptops", "Laptops", 12, List.of()),
             "audio", new Category("audio", "Audio", 47, List.of()));
 
+    /**
+     * Builds a fulfilled order for the seed data.
+     *
+     * @param id    the order identifier
+     * @param total the order value, as a decimal string
+     * @return the constructed order
+     */
     private static Order order(String id, String total) {
         return new Order(id, new BigDecimal(total), "FULFILLED");
     }
@@ -116,6 +129,15 @@ public final class StorefrontApi implements AutoCloseable {
             id -> call("concierge.get", Duration.ofMillis(90),
                     () -> new Concierge("Jean Bartik", "+44 20 7946 " + Math.abs(id.hashCode() % 10000))));
 
+    /**
+     * Serves one page of a customer's orders, resolving the request's cursor to a slice.
+     *
+     * <p>A {@link PageCursor.First} starts at the beginning and a {@link PageCursor.Next} resumes from
+     * its token; the returned page carries the following cursor, empty once the history is exhausted.</p>
+     *
+     * @param request the customer and cursor to read from
+     * @return the page of orders together with the cursor for the next one
+     */
     private OrderPage page(OrderPageRequest request) {
         List<Order> all = orders.getOrDefault(request.customerId(), List.of());
         int from = switch (request.cursor()) {
@@ -129,6 +151,18 @@ public final class StorefrontApi implements AutoCloseable {
         return new OrderPage(slice, next);
     }
 
+    /**
+     * Wraps an endpoint body as a deferred effect that runs on the virtual-thread executor.
+     *
+     * <p>Every invocation increments the call counter and sleeps for the declared latency before
+     * running the body, so timings and counts reflect what a real call would cost.</p>
+     *
+     * @param endpointName the name of the endpoint, for tracing
+     * @param latency      how long the body sleeps before answering
+     * @param body         the work that produces the result
+     * @param <A>          the type the endpoint yields
+     * @return the effect that, when run, executes the body asynchronously
+     */
     private <A> Eff<A> call(String endpointName, Duration latency, java.util.concurrent.Callable<A> body) {
         return Eff.async(executor, endpointName, () -> {
             callCount.incrementAndGet();

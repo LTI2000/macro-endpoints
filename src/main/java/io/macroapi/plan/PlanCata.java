@@ -32,6 +32,7 @@ import io.macroapi.hkt.Higher;
  */
 public final class PlanCata {
 
+    /** Not instantiable; this class is a holder for the static fold. */
     private PlanCata() {
         throw new AssertionError("no instances");
     }
@@ -68,12 +69,34 @@ public final class PlanCata {
         };
     }
 
+    /**
+     * Binds the request type of an {@link Invoke} so its endpoint and request line up, then hands
+     * the leaf to the algebra. Invoke has no sub-plans, so this is where the recursion bottoms out.
+     *
+     * @param node    the invoke node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <Q>     the request type
+     * @param <R>     the response type
+     * @return the interpretation of the node
+     */
     private static <F, Q, R> Higher<F, R> foldInvoke(Invoke<Q, R> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Invoke<Q, R>(var endpoint, var request) -> algebra.invoke(endpoint, request);
         };
     }
 
+    /**
+     * Binds the source type {@code X} of a {@link Transform} so the folded source and the mapping
+     * function share one capture, then folds the source and applies the algebra.
+     *
+     * @param node    the transform node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <X>     the source result type consumed by the function
+     * @param <A>     the transformed result type
+     * @return the interpretation of the node
+     */
     private static <F, X, A> Higher<F, A> foldTransform(Transform<X, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Transform<X, A>(var source, var function, var label) ->
@@ -81,6 +104,18 @@ public final class PlanCata {
         };
     }
 
+    /**
+     * Binds the two operand types {@code X} and {@code Y} of a {@link Combine} so both folded
+     * branches and the combining function agree, then folds both sides and applies the algebra.
+     *
+     * @param node    the combine node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <X>     the left operand result type
+     * @param <Y>     the right operand result type
+     * @param <A>     the combined result type
+     * @return the interpretation of the node
+     */
     private static <F, X, Y, A> Higher<F, A> foldCombine(Combine<X, Y, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Combine<X, Y, A>(var left, var right, var combiner, var label) ->
@@ -88,6 +123,18 @@ public final class PlanCata {
         };
     }
 
+    /**
+     * Binds the intermediate type {@code X} of a {@link Chain} so the folded source and the
+     * runtime-dependent continuation share one capture. The continuation is passed through
+     * unfolded; the interpreter re-enters {@link #fold} once it has a value to feed it.
+     *
+     * @param node    the chain node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <X>     the source result type consumed by the continuation
+     * @param <A>     the chained result type
+     * @return the interpretation of the node
+     */
     private static <F, X, A> Higher<F, A> foldChain(Chain<X, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Chain<X, A>(var source, var continuation, var probe, var label) ->
@@ -95,6 +142,17 @@ public final class PlanCata {
         };
     }
 
+    /**
+     * Binds the structure functor {@code G} of a {@link Fold} so the folded source, the functor
+     * instance and the element algebra agree, then folds the source and applies the algebra.
+     *
+     * @param node    the fold node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <G>     witness for the structure's pattern functor
+     * @param <A>     the reduced result type
+     * @return the interpretation of the node
+     */
     private static <F, G, A> Higher<F, A> foldFold(Fold<G, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Fold<G, A>(var source, var functor, var elementAlgebra, var label) ->
@@ -102,6 +160,19 @@ public final class PlanCata {
         };
     }
 
+    /**
+     * Binds the structure functor {@code G} and the seed type {@code S} of a {@link Hylo} so the
+     * seed, coalgebra, traversal and element algebra all agree. A hylomorphism has no sub-plan to
+     * fold; its seed and functions are handed straight to the algebra, which drives the unfold.
+     *
+     * @param node    the hylomorphism node
+     * @param algebra the interpreter
+     * @param <F>     witness for the interpreter's carrier
+     * @param <G>     witness for the structure's pattern functor
+     * @param <S>     the seed type the coalgebra unfolds from
+     * @param <A>     the produced result type
+     * @return the interpretation of the node
+     */
     private static <F, G, S, A> Higher<F, A> foldHylo(Hylo<G, S, A> node, PlanAlgebra<F> algebra) {
         return switch (node) {
             case Hylo<G, S, A>(var seed, var traversal, var coalgebra, var elementAlgebra, var label) ->

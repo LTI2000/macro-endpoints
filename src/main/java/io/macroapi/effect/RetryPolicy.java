@@ -72,6 +72,18 @@ public record RetryPolicy(int maxAttempts, Duration backoff, Predicate<ApiError>
         return attempt(action, 1);
     }
 
+    /**
+     * Wraps the effect in a recovery that, on a retryable failure, pauses and re-attempts.
+     *
+     * <p>Recursion rather than a loop keeps every attempt a fresh, deferred effect; the recursive
+     * call is guarded by {@link Eff#defer} so no further attempts are built until an earlier one
+     * has actually failed.</p>
+     *
+     * @param action        the effect to attempt
+     * @param attemptNumber the one-based index of this attempt
+     * @param <A>           the success type
+     * @return an effect that yields the action's result or retries on failure
+     */
     private <A> Eff<A> attempt(Eff<A> action, int attemptNumber) {
         if (attemptNumber >= maxAttempts) {
             return action;
@@ -87,6 +99,10 @@ public record RetryPolicy(int maxAttempts, Duration backoff, Predicate<ApiError>
         });
     }
 
+    /**
+     * Pauses the completing thread for the configured backoff, restoring the interrupt flag if the
+     * wait is cut short. A zero backoff returns immediately.
+     */
     private void sleep() {
         if (backoff.isZero()) {
             return;

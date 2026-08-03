@@ -24,7 +24,10 @@ import java.util.function.Consumer;
  */
 public final class ApiRuntime {
 
+    /** The retry policy applied around every endpoint call. */
     private final RetryPolicy retryPolicy;
+
+    /** Receives one event per endpoint call and per named boundary, possibly from several threads. */
     private final Consumer<TraceEvent> traceSink;
 
     /**

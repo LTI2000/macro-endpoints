@@ -27,6 +27,7 @@ public sealed interface ListF<E, A> extends Higher<ListF.Witness<E>, A> {
      * @param <E> the element type held fixed by the partial application
      */
     final class Witness<E> {
+        /** Not instantiable; the tag exists only at the type level. */
         private Witness() {
             throw new AssertionError("no instances");
         }

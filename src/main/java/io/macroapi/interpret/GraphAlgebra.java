@@ -36,8 +36,15 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
     public GraphAlgebra() {
     }
 
+    /** Source of unique vertex identifiers within a single fold; see the note on statefulness. */
     private final AtomicInteger sequence = new AtomicInteger();
 
+    /**
+     * Mints the next vertex identifier for this fold.
+     *
+     * @param prefix a short mnemonic for the node kind, prepended to the counter
+     * @return an identifier unique within this interpreter
+     */
     private String nextId(String prefix) {
         return prefix + sequence.incrementAndGet();
     }
@@ -159,6 +166,13 @@ public final class GraphAlgebra implements PlanAlgebra<Const.Witness<CallGraph>>
         return Const.of(assembled.then(CallGraph.single(reduction), CallGraph.EdgeKind.SEQUENTIAL));
     }
 
+    /**
+     * Folds a probed sub-plan through this same interpreter to obtain its fragment, so that
+     * identifiers stay unique across the whole graph.
+     *
+     * @param plan the sub-plan to graph
+     * @return the fragment for {@code plan}
+     */
     private CallGraph graphOf(Plan<?> plan) {
         return Const.unwrap(PlanCata.fold(plan, this));
     }

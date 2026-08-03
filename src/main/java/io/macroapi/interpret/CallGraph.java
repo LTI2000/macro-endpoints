@@ -324,10 +324,23 @@ public record CallGraph(List<GraphNode> nodes,
         return out.toString();
     }
 
+    /**
+     * Looks up a vertex by its identifier.
+     *
+     * @param id the identifier to find
+     * @return the matching node, or empty if none carries that identifier
+     */
     private java.util.Optional<GraphNode> nodeById(String id) {
         return nodes.stream().filter(node -> node.id().equals(id)).findFirst();
     }
 
+    /**
+     * Renders one vertex as a Graphviz DOT node statement, choosing its shape and fill from the
+     * node's kind and appending the note, when present, on a second line.
+     *
+     * @param node the vertex to render
+     * @return the DOT node statement
+     */
     private static String dotNode(GraphNode node) {
         // Each part is escaped independently, then joined with DOT's own line break, so that the
         // separator survives escaping instead of being turned into a literal backslash-n.
@@ -344,6 +357,13 @@ public record CallGraph(List<GraphNode> nodes,
         return "\"" + node.id() + "\" [label=\"" + text + "\", " + style + "];";
     }
 
+    /**
+     * Renders one vertex as a PlantUML rectangle, tagging it with a stereotype drawn from the
+     * node's kind.
+     *
+     * @param node the vertex to render
+     * @return the PlantUML rectangle declaration
+     */
     private static String umlNode(GraphNode node) {
         String stereotype = switch (node.kind()) {
             case ENDPOINT -> "<<call>>";
@@ -355,6 +375,12 @@ public record CallGraph(List<GraphNode> nodes,
         return "rectangle \"" + node.label() + "\" " + stereotype + " as " + node.id();
     }
 
+    /**
+     * The Graphviz DOT attribute list styling an edge of the given kind, including any edge label.
+     *
+     * @param kind the dependency category
+     * @return the DOT edge attributes
+     */
     private static String dotEdgeStyle(EdgeKind kind) {
         return switch (kind) {
             case SEQUENTIAL -> "color=\"#334455\"";
@@ -364,6 +390,12 @@ public record CallGraph(List<GraphNode> nodes,
         };
     }
 
+    /**
+     * The PlantUML arrow syntax connecting two nodes for an edge of the given kind.
+     *
+     * @param kind the dependency category
+     * @return the PlantUML arrow
+     */
     private static String umlArrow(EdgeKind kind) {
         return switch (kind) {
             case SEQUENTIAL -> " --> ";
@@ -373,10 +405,24 @@ public record CallGraph(List<GraphNode> nodes,
         };
     }
 
+    /**
+     * Escapes backslashes and double quotes so the text is safe inside a DOT quoted string.
+     *
+     * @param text the raw text
+     * @return the escaped text
+     */
     private static String escape(String text) {
         return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
+    /**
+     * Concatenates two lists into a new list, preserving order.
+     *
+     * @param first  the elements placed first
+     * @param second the elements appended after them
+     * @param <T>    the element type
+     * @return a new list holding every element of {@code first} followed by every element of {@code second}
+     */
     private static <T> List<T> concat(List<T> first, List<T> second) {
         List<T> combined = new ArrayList<>(first.size() + second.size());
         combined.addAll(first);
